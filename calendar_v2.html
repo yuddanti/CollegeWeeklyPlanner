@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week Calendar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        th {
+            background-color: #ddd;
+        }
+        .row-header {
+            background-color: #ddd;
+            cursor: pointer;
+            position: relative;
+        }
+        .row-header input {
+            border: none;
+            background: transparent;
+            text-align: left;
+            width: 90%;
+        }
+        .row-actions {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .row-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 16px;
+        }
+        tr:hover .row-actions {
+            display: inline-block;
+        }
+        .event {
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 5px;
+            position: relative;
+            cursor: pointer;
+        }
+        .event-homework { background-color: var(--homework-color, #87CEEB); }
+        .event-quiz { background-color: var(--quiz-color, #90EE90); }
+        .event-test { background-color: var(--test-color, #FFB6C1); }
+        .event-project { background-color: var(--project-color, #FFD700); }
+        .event-actions {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .event:hover .event-actions {
+            display: inline-block;
+        }
+        .event-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 16px;
+        }
+        /* Modal Styles */
+        #eventModal, #settingsModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+        }
+        .modal-header {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .modal-footer {
+            text-align: right;
+        }
+        .modal-footer button {
+            padding: 10px 15px;
+            margin-left: 10px;
+        }
+        input[type="text"], select, input[type="time"], input[type="color"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .settings-button, .current-week-button {
+            padding: 10px 15px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .new-week-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button class="settings-button" onclick="openSettingsModal()">Settings</button>
+    <button class="current-week-button" onclick="scrollToCurrentWeek()">Go to Current Week</button>
+    <h1>Week Calendar</h1>
+
+    <div id="calendarContainer">
+        <div class="week-table" id="weekTable1">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SEPTEMBER</th>
+                        <th>MONDAY (9/9)</th>
+                        <th>TUESDAY (9/10)</th>
+                        <th>WEDNESDAY (9/11)</th>
+                        <th>THURSDAY (9/12)</th>
+                        <th>FRIDAY (9/13)</th>
+                        <th>WEEKEND</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="row-header">
+                            <input type="text" value=" " />
+                            <span class="row-actions">
+                                <button onclick="addRow(this)">+</button>
+                                <button onclick="removeRow(this)">-</button>
+                            </span>
+                        </td>
+                        <td onclick="openModal(this)"></td>
+                        <td onclick="openModal(this)"></td>
+                        <td onclick="openModal(this)"></td>
+                        <td onclick="openModal(this)"></td>
+                        <td onclick="openModal(this)"></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button class="new-week-button" onclick="addNewWeek()">Add New Week</button>
+
+    <!-- Modal for adding/editing events -->
+    <div id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">Add Event</div>
+            <input type="text" id="eventTitle" placeholder="Event Title" />
+            <select id="eventType">
+                <option value="homework">Homework</option>
+                <option value="quiz">Quiz</option>
+                <option value="test">Test</option>
+                <option value="project">Project</option>
+            </select>
+            <input type="time" id="eventTime" placeholder="Due Time (Optional)" />
+            <div class="modal-footer">
+                <button onclick="closeModal()">Cancel</button>
+                <button onclick="saveEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">Settings</div>
+            <label for="homeworkColor">Homework Color:</label>
+            <input type="color" id="homeworkColor" value="#87CEEB" />
+            <label for="quizColor">Quiz Color:</label>
+            <input type="color" id="quizColor" value="#90EE90" />
+            <label for="testColor">Test Color:</label>
+            <input type="color" id="testColor" value="#FFB6C1" />
+            <label for="projectColor">Project Color:</label>
+            <input type="color" id="projectColor" value="#FFD700" />
+            <div class="modal-footer">
+                <button onclick="closeSettingsModal()">Cancel</button>
+                <button onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCell;
+
+        function addRow(button) {
+            let row = button.closest('tr');
+            let newRow = row.cloneNode(true);
+            let input = newRow.querySelector('input');
+            input.value = '';
+            let cells = newRow.querySelectorAll('td');
+            cells.forEach((cell, index) => {
+                if (index === 0) {
+                    cell.querySelector('input').value = '';
+                } else {
+                    cell.innerHTML = '';
+                    cell.onclick = function() { openModal(cell); };
+                }
+            });
+            row.parentNode.insertBefore(newRow, row.nextSibling);
+        }
+
+        function removeRow(button) {
+            let row = button.closest('tr');
+            let tbody = row.parentNode;
+            if (tbody.rows.length > 1) {
+                tbody.removeChild(row);
+            }
+        }
+
+        function openModal(cell) {
+            currentCell = cell;
+            document.getElementById("eventTitle").value = '';
+            document.getElementById("eventType").value = 'homework';
+            document.getElementById("eventTime").value = '';
+            document.getElementById("eventModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("eventModal").style.display = "none";
+        }
+
+        function saveEvent() {
+            const title = document.getElementById("eventTitle").value;
+            const type = document.getElementById("eventType").value;
+            const time = document.getElementById("eventTime").value;
+
+            if (title.trim() === '') return;
+
+            let eventDiv = document.createElement('div');
+            eventDiv.className = `event event-${type}`;
+            eventDiv.innerHTML = `
+                <strong>${title}</strong><br>
+                ${time ? `<small>${time}</small>` : ''}
+                <span class="event-actions">
+                    <button onclick="editEvent(this)">✏️</button>
+                    <button onclick="deleteEvent(this)">❌</button>
+                </span>
+            `;
+            currentCell.appendChild(eventDiv);
+
+            closeModal();
+        }
+
+        function deleteEvent(button) {
+            let eventDiv = button.closest('.event');
+            eventDiv.remove();
+        }
+
+        function editEvent(button) {
+            let eventDiv = button.closest('.event');
+            let title = eventDiv.querySelector('strong').textContent;
+            let time = eventDiv.querySelector('small') ? eventDiv.querySelector('small').textContent : '';
+            let type = eventDiv.className.split(' ').find(cls => cls.startsWith('event-')).split('-')[1];
+
+            currentCell = eventDiv.parentElement;
+            document.getElementById("eventTitle").value = title;
+            document.getElementById("eventType").value = type;
+            document.getElementById("eventTime").value = time;
+            eventDiv.remove();
+            document.getElementById("eventModal").style.display = "block";
+        }
+
+        function openSettingsModal() {
+            document.getElementById("settingsModal").style.display = "block";
+        }
+
+        function closeSettingsModal() {
+            document.getElementById("settingsModal").style.display = "none";
+        }
+
+        function saveSettings() {
+            const homeworkColor = document.getElementById("homeworkColor").value;
+            const quizColor = document.getElementById("quizColor").value;
+            const testColor = document.getElementById("testColor").value;
+            const projectColor = document.getElementById("projectColor").value;
+
+            document.documentElement.style.setProperty('--homework-color', homeworkColor);
+            document.documentElement.style.setProperty('--quiz-color', quizColor);
+            document.documentElement.style.setProperty('--test-color', testColor);
+            document.documentElement.style.setProperty('--project-color', projectColor);
+
+            closeSettingsModal();
+        }
+
+        function addNewWeek() {
+            const lastTable = document.querySelector("#calendarContainer .week-table:last-of-type");
+            const newTable = lastTable.cloneNode(true);
+            const lastDateText = lastTable.querySelectorAll("th")[1].textContent.match(/\d+\/\d+/);
+            const lastDate = new Date(new Date().getFullYear(), parseInt(lastDateText[0].split('/')[0]) - 1, parseInt(lastDateText[0].split('/')[1]));
+
+            const newDates = [];
+            for (let i = 1; i <= 5; i++) {
+                lastDate.setDate(lastDate.getDate() + 1);
+                const month = lastDate.getMonth() + 1;
+                const day = lastDate.getDate();
+                newDates.push(`${month}/${day}`);
+            }
+
+            const newTableId = `weekTable${document.querySelectorAll('.week-table').length + 1}`;
+            newTable.id = newTableId;
+
+            const ths = newTable.querySelectorAll('th');
+            ths[0].textContent = lastDate.toLocaleString('default', { month: 'long' }).toUpperCase();
+            for (let i = 1; i <= 5; i++) {
+                ths[i].textContent = `${ths[i].textContent.split(' ')[0]} (${newDates[i - 1]})`;
+            }
+            lastTable.parentNode.appendChild(newTable);
+        }
+
+        function scrollToCurrentWeek() {
+            const today = new Date();
+            const weeks = document.querySelectorAll('.week-table');
+            let targetWeek;
+
+            weeks.forEach(week => {
+                const firstDayText = week.querySelector('th:nth-of-type(2)').textContent.match(/\d+\/\d+/);
+                const firstDay = new Date(new Date().getFullYear(), parseInt(firstDayText[0].split('/')[0]) - 1, parseInt(firstDayText[0].split('/')[1]));
+                const lastDay = new Date(firstDay);
+                lastDay.setDate(lastDay.getDate() + 4);
+
+                if (today >= firstDay && today <= lastDay) {
+                    targetWeek = week;
+                }
+            });
+
+            if (targetWeek) {
+                targetWeek.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
